@@ -1,14 +1,12 @@
-import random
+import secrets
 import string
 
-
 def get_user_preferences():
-
     while True:
         try:
-            length = int(input("Enter desired password length: "))
-            if length <= 0:
-                print("Password length must be greater than 0.")
+            length = int(input("Enter desired password length (minimum 8): "))
+            if length < 8:
+                print("Password length must be at least 8.")
                 continue
             break
         except ValueError:
@@ -18,51 +16,52 @@ def get_user_preferences():
     include_numbers = input("Include numbers? (y/n): ").strip().lower() == 'y'
     include_special = input("Include special characters? (y/n): ").strip().lower() == 'y'
 
-    return length, include_upper, include_numbers, include_special
+    if not any([include_upper, include_numbers, include_special]):
+        print("Warning: No additional character types selected. Password will be lowercase only.")
 
+    return length, include_upper, include_numbers, include_special
 
 def generate_password(length, include_upper, include_numbers, include_special):
 
+    lowercase = list(string.ascii_lowercase)
+    uppercase = list(string.ascii_uppercase) if include_upper else []
+    numbers = list(string.digits) if include_numbers else []
+    special = list(string.punctuation) if include_special else []
 
-    chars = list(string.ascii_lowercase)
-
-
-    if include_upper:
-        chars += list(string.ascii_uppercase)
-    if include_numbers:
-        chars += list(string.digits)
-    if include_special:
-        chars += list(string.punctuation)
+    all_chars = lowercase + uppercase + numbers + special
+    if not all_chars:
+        raise ValueError("No character sets available to generate password.")
 
 
-    if not chars:
-        raise ValueError("No character sets selected. Cannot generate password.")
+    password_chars = []
+    if uppercase:
+        password_chars.append(secrets.choice(uppercase))
+    if numbers:
+        password_chars.append(secrets.choice(numbers))
+    if special:
+        password_chars.append(secrets.choice(special))
 
-    password = ''.join(random.choice(chars) for _ in range(length))
-    return password
 
+    remaining_length = length - len(password_chars)
+    password_chars += [secrets.choice(all_chars) for _ in range(remaining_length)]
+
+
+    secrets.SystemRandom().shuffle(password_chars)
+
+    return ''.join(password_chars)
 
 def main():
-    print("\n === Secure Password Generator === \n")
-
-
+    print("\n=== Secure Password Generator ===\n")
     length, include_upper, include_numbers, include_special = get_user_preferences()
-
-
     password = generate_password(length, include_upper, include_numbers, include_special)
-
-    print("\n Your Generated Password:")
+    print("\nYour Generated Password:")
     print(password)
 
-
-
 def run_tests():
-
-    print("\n Running basic tests...")
-
-
+    print("\nRunning basic tests...")
+    # Basic length tests
     assert len(generate_password(8, True, True, True)) == 8
-    assert len(generate_password(1, False, False, False)) == 1
+    assert len(generate_password(12, False, False, False)) == 12
     assert len(generate_password(20, True, False, False)) == 20
 
 
@@ -77,10 +76,6 @@ def run_tests():
 
     print("All tests passed successfully!")
 
-
 if __name__ == "__main__":
-    # Run main program
     main()
-
-
     run_tests()
